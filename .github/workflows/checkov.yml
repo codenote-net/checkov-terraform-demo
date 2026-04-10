@@ -17,10 +17,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Checkov
-        run: pip install checkov
-
       - name: Run Checkov on insecure/
+        id: checkov
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: insecure/
+          framework: terraform
+          soft_fail: true
+          output_format: cli
+
+      - name: Comment insecure/ results on PR
+        if: github.event_name == 'pull_request' && always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RESULTS: ${{ steps.checkov.outputs.results }}
         run: |
           {
             echo '## Checkov scan: `insecure/`'
@@ -28,27 +38,41 @@ jobs:
             echo '> Expected: many failures (intentionally vulnerable code)'
             echo ''
             echo '```'
-            checkov -d insecure/ --framework terraform --compact 2>&1 || true
+            echo "$RESULTS"
             echo '```'
-          } | tee /tmp/checkov-insecure.md
-
-      - name: Comment on PR
-        if: github.event_name == 'pull_request'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh pr comment "${{ github.event.number }}" --body-file /tmp/checkov-insecure.md
+          } > /tmp/comment.md
+          gh pr comment "${{ github.event.number }}" --body-file /tmp/comment.md
 
   scan-secure:
     name: "Scan secure/"
     runs-on: ubuntu-latest
-    if: hashFiles('secure/**') != ''
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Checkov
-        run: pip install checkov
+      - name: Check if secure/ exists
+        id: check
+        run: |
+          if [ -d "secure" ] && [ "$(ls -A secure/)" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Run Checkov on secure/
+        if: steps.check.outputs.exists == 'true'
+        id: checkov
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: secure/
+          framework: terraform
+          soft_fail: false
+          output_format: cli
+
+      - name: Comment secure/ results on PR
+        if: github.event_name == 'pull_request' && steps.check.outputs.exists == 'true' && always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RESULTS: ${{ steps.checkov.outputs.results }}
         run: |
           {
             echo '## Checkov scan: `secure/`'
@@ -56,12 +80,11 @@ jobs:
             echo '> Expected: all checks passed'
             echo ''
             echo '```'
-            checkov -d secure/ --framework terraform --compact 2>&1
+            echo "$RESULTS"
             echo '```'
-          } | tee /tmp/checkov-secure.md
+          } > /tmp/comment.md
+          gh pr comment "${{ github.event.number }}" --body-file /tmp/comment.md
 
-      - name: Comment on PR
-        if: github.event_name == 'pull_request'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh pr comment "${{ github.event.number }}" --body-file /tmp/checkov-secure.md
+      - name: Skip notice
+        if: steps.check.outputs.exists == 'false'
+        run: echo "secure/ directory not found — skipping scan"
