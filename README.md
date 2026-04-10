@@ -49,29 +49,69 @@ checkov -d insecure/ --framework terraform --compact
 
 ### insecure/ — Passed 13 / Failed 37
 
-| Check ID | Description | Resource |
-|----------|-------------|----------|
-| CKV_AWS_18 | S3 bucket access logging disabled | `aws_s3_bucket.data` |
-| CKV_AWS_20 | S3 bucket allows public READ access | `aws_s3_bucket.data` |
-| CKV_AWS_21 | S3 bucket versioning disabled | `aws_s3_bucket.data` |
-| CKV_AWS_145 | S3 bucket not encrypted with KMS | `aws_s3_bucket.data` |
-| CKV2_AWS_6 | S3 bucket missing public access block | `aws_s3_bucket.data` |
-| CKV_AWS_144 | S3 bucket missing cross-region replication | `aws_s3_bucket.data` |
-| CKV_AWS_23 | Security group rules missing descriptions | `aws_security_group.web` |
-| CKV_AWS_24 | SSH (22) open to 0.0.0.0/0 | `aws_security_group.web` |
-| CKV_AWS_25 | RDP (3389) open to 0.0.0.0/0 | `aws_security_group.web` |
-| CKV_AWS_260 | HTTP (80) open to 0.0.0.0/0 | `aws_security_group.web` |
-| CKV_AWS_16 | RDS storage encryption disabled | `aws_db_instance.main` |
-| CKV_AWS_17 | RDS publicly accessible | `aws_db_instance.main` |
-| CKV_AWS_161 | RDS IAM authentication disabled | `aws_db_instance.main` |
-| CKV_AWS_157 | RDS Multi-AZ disabled | `aws_db_instance.main` |
-| CKV_AWS_293 | IAM policy allows wildcard Action | `aws_iam_policy.admin` |
-| CKV_AWS_289 | IAM policy allows wildcard Resource | `aws_iam_policy.admin` |
-| CKV_AWS_35 | CloudTrail logs not encrypted with KMS | `aws_cloudtrail.main` |
-| CKV_AWS_36 | CloudTrail log file validation disabled | `aws_cloudtrail.main` |
-| CKV_AWS_67 | CloudTrail not enabled in all regions | `aws_cloudtrail.main` |
+All 37 failed checks from CI (Checkov 3.2.517):
 
-> The above is a subset of key findings. Run `checkov -d insecure/` to see all 37 failures.
+**S3 (`aws_s3_bucket.data`)**
+
+| Check ID | Description |
+|----------|-------------|
+| CKV_AWS_18 | S3 bucket access logging disabled |
+| CKV_AWS_20 | S3 bucket allows public READ access |
+| CKV_AWS_21 | S3 bucket versioning disabled |
+| CKV_AWS_144 | S3 bucket missing cross-region replication |
+| CKV_AWS_145 | S3 bucket not encrypted with KMS |
+| CKV2_AWS_6 | S3 bucket missing public access block |
+| CKV2_AWS_61 | S3 bucket missing lifecycle configuration |
+| CKV2_AWS_62 | S3 bucket event notifications disabled |
+
+**Security Group (`aws_security_group.web`)**
+
+| Check ID | Description |
+|----------|-------------|
+| CKV_AWS_23 | Security group rules missing descriptions |
+| CKV_AWS_24 | SSH (22) open to 0.0.0.0/0 |
+| CKV_AWS_25 | RDP (3389) open to 0.0.0.0/0 |
+| CKV_AWS_260 | HTTP (80) open to 0.0.0.0/0 |
+| CKV_AWS_382 | Egress open to 0.0.0.0/0 on all ports |
+| CKV2_AWS_5 | Security group not attached to any resource |
+
+**RDS (`aws_db_instance.main`)**
+
+| Check ID | Description |
+|----------|-------------|
+| CKV_AWS_16 | RDS storage encryption disabled |
+| CKV_AWS_17 | RDS publicly accessible |
+| CKV_AWS_118 | RDS enhanced monitoring disabled |
+| CKV_AWS_129 | RDS logging disabled |
+| CKV_AWS_157 | RDS Multi-AZ disabled |
+| CKV_AWS_161 | RDS IAM authentication disabled |
+| CKV_AWS_226 | RDS auto minor version upgrade disabled |
+| CKV_AWS_293 | RDS deletion protection disabled |
+| CKV2_AWS_60 | RDS copy tags to snapshots disabled |
+
+**IAM (`aws_iam_policy.admin`)**
+
+| Check ID | Description |
+|----------|-------------|
+| CKV_AWS_62 | IAM policy grants full administrative privileges |
+| CKV_AWS_63 | IAM policy allows "*" as action |
+| CKV_AWS_286 | IAM policy allows privilege escalation |
+| CKV_AWS_287 | IAM policy allows credentials exposure |
+| CKV_AWS_288 | IAM policy allows data exfiltration |
+| CKV_AWS_289 | IAM policy allows resource exposure without constraints |
+| CKV_AWS_290 | IAM policy allows write access without constraints |
+| CKV_AWS_355 | IAM policy allows "*" as resource for restrictable actions |
+| CKV2_AWS_40 | IAM policy grants full IAM privileges |
+
+**CloudTrail (`aws_cloudtrail.main`)**
+
+| Check ID | Description |
+|----------|-------------|
+| CKV_AWS_35 | CloudTrail logs not encrypted with KMS |
+| CKV_AWS_36 | CloudTrail log file validation disabled |
+| CKV_AWS_67 | CloudTrail not enabled in all regions |
+| CKV_AWS_252 | CloudTrail missing SNS topic |
+| CKV2_AWS_10 | CloudTrail not integrated with CloudWatch Logs |
 
 ### secure/ — Passed 111 / Failed 0
 
