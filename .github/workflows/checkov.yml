@@ -1,0 +1,67 @@
+name: Checkov
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  scan-insecure:
+    name: "Scan insecure/"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Checkov
+        run: pip install checkov
+
+      - name: Run Checkov on insecure/
+        run: |
+          {
+            echo '## Checkov scan: `insecure/`'
+            echo ''
+            echo '> Expected: many failures (intentionally vulnerable code)'
+            echo ''
+            echo '```'
+            checkov -d insecure/ --framework terraform --compact 2>&1 || true
+            echo '```'
+          } | tee /tmp/checkov-insecure.md
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr comment "${{ github.event.number }}" --body-file /tmp/checkov-insecure.md
+
+  scan-secure:
+    name: "Scan secure/"
+    runs-on: ubuntu-latest
+    if: hashFiles('secure/**') != ''
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Checkov
+        run: pip install checkov
+
+      - name: Run Checkov on secure/
+        run: |
+          {
+            echo '## Checkov scan: `secure/`'
+            echo ''
+            echo '> Expected: all checks passed'
+            echo ''
+            echo '```'
+            checkov -d secure/ --framework terraform --compact 2>&1
+            echo '```'
+          } | tee /tmp/checkov-secure.md
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr comment "${{ github.event.number }}" --body-file /tmp/checkov-secure.md
