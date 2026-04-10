@@ -1,0 +1,90 @@
+name: Checkov
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  scan-insecure:
+    name: "Scan insecure/"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Checkov on insecure/
+        id: checkov
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: insecure/
+          framework: terraform
+          soft_fail: true
+          output_format: cli
+
+      - name: Comment insecure/ results on PR
+        if: github.event_name == 'pull_request' && always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RESULTS: ${{ steps.checkov.outputs.results }}
+        run: |
+          {
+            echo '## Checkov scan: `insecure/`'
+            echo ''
+            echo '> Expected: many failures (intentionally vulnerable code)'
+            echo ''
+            echo '```'
+            echo "$RESULTS"
+            echo '```'
+          } > /tmp/comment.md
+          gh pr comment "${{ github.event.number }}" --body-file /tmp/comment.md
+
+  scan-secure:
+    name: "Scan secure/"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check if secure/ exists
+        id: check
+        run: |
+          if [ -d "secure" ] && [ "$(ls -A secure/)" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run Checkov on secure/
+        if: steps.check.outputs.exists == 'true'
+        id: checkov
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: secure/
+          framework: terraform
+          soft_fail: false
+          output_format: cli
+
+      - name: Comment secure/ results on PR
+        if: github.event_name == 'pull_request' && steps.check.outputs.exists == 'true' && always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RESULTS: ${{ steps.checkov.outputs.results }}
+        run: |
+          {
+            echo '## Checkov scan: `secure/`'
+            echo ''
+            echo '> Expected: all checks passed'
+            echo ''
+            echo '```'
+            echo "$RESULTS"
+            echo '```'
+          } > /tmp/comment.md
+          gh pr comment "${{ github.event.number }}" --body-file /tmp/comment.md
+
+      - name: Skip notice
+        if: steps.check.outputs.exists == 'false'
+        run: echo "secure/ directory not found — skipping scan"
